@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=70"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "withpy"
+version = "0.1.0"
+description = "Batteries-included Swiss-army CLI -- stdlib only, no pip required"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.14"
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest>=9.0.3", "tzdata>=2024.1"]
+
+[project.scripts]
+withpy = "withpy.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
