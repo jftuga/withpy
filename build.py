@@ -17,7 +17,7 @@ _CMD_DIR = _SRC_DIR / "commands"
 _OUT_DIR = Path("dist")
 _OUT_FILE = _OUT_DIR / "withpy"
 
-_SHEBANG = "#!/usr/bin/env python3"
+_SHEBANG = "#!/usr/bin/env python3.14"
 
 _INTERNAL_PREFIXES: tuple[str, ...] = ("withpy.", "withpy ", "commands.", "commands ")
 
