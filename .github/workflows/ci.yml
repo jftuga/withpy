@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Compile check
+        run: |
+          uv run python -m py_compile withpy/__init__.py
+          uv run python -m py_compile withpy/__main__.py
+          uv run python -m py_compile withpy/cli.py
+          uv run python -m compileall -q withpy/commands/
+
+      - name: Run tests
+        run: uv run python -m pytest tests/ -v --ignore=tests/test_amalgamated.py
+
+      - name: Build amalgamated artifact
+        run: uv run python build.py
+
+      - name: Run amalgamated tests
+        run: uv run python -m pytest tests/test_amalgamated.py -v
+
+      - name: Smoke test
+        run: |
+          uv run python dist/withpy --version
+          uv run python dist/withpy --help
+          echo -n "hello" | uv run python dist/withpy hash --algo sha256
+          echo -n "test" | uv run python dist/withpy encode --format base64 | uv run python dist/withpy decode --format base64
+
+      - name: Upload artifact
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: withpy
+          path: dist/withpy
