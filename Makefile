@@ -24,7 +24,10 @@ amalgamate:
 	@echo "Built $(DIST_BIN) (v$(VERSION))"
 
 dist: amalgamate
-	tar cJf $(ARCHIVE) -C $(DIST_DIR) $(NAME)
+	mkdir -p $(NAME)-$(VERSION)
+	cp -f $(DIST_BIN) README.md LICENSE $(NAME)-$(VERSION)/
+	tar cJf $(ARCHIVE) $(NAME)-$(VERSION)
+	rm -rf $(NAME)-$(VERSION)
 	@echo "Created $(ARCHIVE)"
 	@ls -lh $(ARCHIVE)
 
@@ -43,7 +46,7 @@ uninstall:
 	@echo "Removed $(NAME) from $(INSTALL_DIR)"
 
 clean:
-	rm -rf $(DIST_DIR) __pycache__ .pytest_cache *.egg-info $(ARCHIVE)
+	rm -rf $(DIST_DIR) __pycache__ .pytest_cache *.egg-info $(ARCHIVE) $(NAME)-$(VERSION)
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 
 run:

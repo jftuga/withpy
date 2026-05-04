@@ -29,7 +29,10 @@ jobs:
       - name: Build distribution
         run: |
           python build.py
-          tar cJf withpy-${GITHUB_REF_NAME}.tar.xz -C dist withpy
+          staging="withpy-${GITHUB_REF_NAME#v}"
+          mkdir "$staging"
+          cp dist/withpy README.md LICENSE "$staging/"
+          tar cJf "${staging}.tar.xz" "$staging"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
