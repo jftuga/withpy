@@ -18,17 +18,20 @@ jobs:
         with:
           python-version: "3.14"
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
       - name: Install dependencies
-        run: pip install -e '.[test]'
+        run: uv sync --group dev
 
       - name: Run tests
         run: |
-          python build.py
-          python -m pytest tests/ -v
+          uv run python build.py
+          uv run python -m pytest tests/ -v
 
       - name: Build distribution
         run: |
-          python build.py
+          uv run python build.py
           staging="withpy-${GITHUB_REF_NAME#v}"
           mkdir "$staging"
           cp dist/withpy README.md LICENSE "$staging/"
