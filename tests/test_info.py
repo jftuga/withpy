@@ -57,3 +57,16 @@ def test_key_lookup(cli):
     assert result.returncode == 0
     output = result.stdout.decode().strip()
     assert output in ("Darwin", "Linux", "Windows")
+
+
+def test_csv_windows_newlines() -> None:
+    """Windows stdout translation must not introduce empty CSV records."""
+    import io
+
+    from withpy.commands.info import _format_csv_output
+
+    output = io.BytesIO()
+    with io.TextIOWrapper(output, encoding="utf-8", newline="\r\n") as stdout:
+        stdout.write(_format_csv_output({"system": {"name": "example"}}))
+        stdout.flush()
+        assert output.getvalue() == b'section,key,value\r\nsystem,name,example\r\n'

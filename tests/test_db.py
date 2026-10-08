@@ -82,3 +82,14 @@ def test_csv_export(cli: CliRunner, tmp_path: Path) -> None:
     assert list(csv.reader(io.StringIO(result.stdout.decode()))) == [
         ["name", "value"], ["hello, world", "42"],
     ]
+
+
+def test_csv_windows_newlines() -> None:
+    """Windows stdout translation must not introduce empty CSV records."""
+    from withpy.commands.db import _db_format_csv_output
+
+    output = io.BytesIO()
+    with io.TextIOWrapper(output, encoding="utf-8", newline="\r\n") as stdout:
+        stdout.write(_db_format_csv_output(["value", "text"], [(1, 'hello, "world"')]))
+        stdout.flush()
+        assert output.getvalue() == b'value,text\r\n1,"hello, ""world"""\r\n'

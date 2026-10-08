@@ -53,7 +53,8 @@ def _db_format_csv_output(headers: list[str], rows: list[tuple]) -> str:
         CSV string.
     """
     output = io.StringIO()
-    writer = csv.writer(output)
+    # Let stdout translate LF once on Windows.
+    writer = csv.writer(output, lineterminator="\n")
     writer.writerow(headers)
     for row in rows:
         writer.writerow(row)
