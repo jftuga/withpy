@@ -48,7 +48,7 @@ These examples run from the extracted release directory. After installing
   | ./withpy json --mode pretty
 ```
 
-**Stdlib modules used: 92** | **Subcommands: 51**
+**Stdlib modules used: 91** | **Subcommands: 51**
 
 ## Subcommands
 
@@ -189,7 +189,8 @@ make help        # Show all targets
 - Zero third-party runtime dependencies
 - One subcommand per file under `withpy/commands/`
 - Thin argparse dispatcher in `cli.py`
-- Single-file artifact via `build.py`, preserving separate module namespaces
+- Readable single-file artifact via `build.py`, with stdlib imports at the top
+  and build-time checks for conflicting global names
 - Python 3.14+, fully type-annotated
 - See [AGENTS.md](AGENTS.md) for contributor guidelines
 

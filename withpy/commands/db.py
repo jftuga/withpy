@@ -42,7 +42,7 @@ def _format_table(headers: list[str], rows: list[tuple]) -> str:
     return "\n".join(lines)
 
 
-def _format_csv_output(headers: list[str], rows: list[tuple]) -> str:
+def _db_format_csv_output(headers: list[str], rows: list[tuple]) -> str:
     """Format query results as CSV.
 
     Args:
@@ -153,7 +153,7 @@ def run(args: argparse.Namespace) -> int:
                         case "table":
                             print(_format_table(headers, rows))
                         case "csv":
-                            sys.stdout.write(_format_csv_output(headers, rows))
+                            sys.stdout.write(_db_format_csv_output(headers, rows))
                         case "json":
                             print(_format_json_output(headers, rows))
                 else:
@@ -181,7 +181,7 @@ def run(args: argparse.Namespace) -> int:
                     case "table":
                         print(_format_table(headers, rows))
                     case "csv":
-                        sys.stdout.write(_format_csv_output(headers, rows))
+                        sys.stdout.write(_db_format_csv_output(headers, rows))
                     case "json":
                         print(_format_json_output(headers, rows))
             case _:

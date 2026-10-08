@@ -174,7 +174,7 @@ def _format_result(value: int | float | complex, precision: int | None, base: st
     return str(value)
 
 
-def _compute_stats(numbers: list[float]) -> str:
+def _calc_compute_stats(numbers: list[float]) -> str:
     """Compute statistical measures of a number list.
 
     Args:
@@ -244,7 +244,7 @@ def run(args: argparse.Namespace) -> int:
             except ValueError as e:
                 print(f"error: invalid number: {e}", file=sys.stderr)
                 return 1
-            print(_compute_stats(numbers))
+            print(_calc_compute_stats(numbers))
             return 0
         case _:
             print(f"error: unknown mode: {args.mode}", file=sys.stderr)

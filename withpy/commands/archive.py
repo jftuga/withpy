@@ -38,7 +38,7 @@ _TAR_READ_MODES: dict[str, str] = {
 }
 
 
-def _detect_format(path: str) -> str:
+def _archive_detect_format(path: str) -> str:
     """Detect archive format from file extension.
 
     Args:
@@ -87,7 +87,7 @@ def _strip_components(path: str, strip: int) -> str:
     return "/".join(parts[strip:])
 
 
-def _create_archive(files: list[str], output: str, fmt: str) -> None:
+def _archive_create(files: list[str], output: str, fmt: str) -> None:
     """Create an archive from the given files.
 
     Args:
@@ -221,11 +221,11 @@ def run(args: argparse.Namespace) -> int:
                     return 1
                 fmt = args.format
                 if fmt == "auto":
-                    fmt = _detect_format(output)
+                    fmt = _archive_detect_format(output)
                 files = args.files
                 if not files and args.archive and args.archive != output:
                     files = [args.archive]
-                _create_archive(files, output, fmt)
+                _archive_create(files, output, fmt)
                 return 0
             case "extract":
                 if not args.archive:
@@ -233,7 +233,7 @@ def run(args: argparse.Namespace) -> int:
                     return 1
                 fmt = args.format
                 if fmt == "auto":
-                    fmt = _detect_format(args.archive)
+                    fmt = _archive_detect_format(args.archive)
                 output = args.output or "."
                 _extract_archive(args.archive, output, fmt, args.strip)
                 return 0
@@ -243,7 +243,7 @@ def run(args: argparse.Namespace) -> int:
                     return 1
                 fmt = args.format
                 if fmt == "auto":
-                    fmt = _detect_format(args.archive)
+                    fmt = _archive_detect_format(args.archive)
                 entries = _list_archive(args.archive, fmt)
                 for entry in entries:
                     print(entry)
