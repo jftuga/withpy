@@ -2,17 +2,17 @@
 
 import socket
 import subprocess
-import sys
 import time
+from collections.abc import Iterator
 
 import pytest
 
 
 @pytest.fixture
-def echo_server():
+def echo_server(cli_command: list[str]) -> Iterator[int]:
     """Start an echo server and yield its port."""
     proc = subprocess.Popen(
-        [sys.executable, "-m", "withpy", "net", "--mode", "echo", "--port", "0"],
+        cli_command + ["net", "--mode", "echo", "--port", "0"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )

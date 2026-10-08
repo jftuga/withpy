@@ -7,7 +7,48 @@ No pip, no venv, no third-party dependencies -- just Python.
 (Go, 91 stdlib packages) and
 [swiftswiss](https://github.com/jftuga/swiftswiss) (Swift, 23 frameworks).
 
-**Stdlib modules used: 91** | **Subcommands: 51**
+## Quick start: downloaded release
+
+Download and extract a release archive from [GitHub Releases](https://github.com/jftuga/withpy/releases),
+then run these commands from the extracted directory:
+
+```sh
+python3.14 --version
+./withpy --help
+./withpy calc "sqrt(2) * pi"
+```
+
+Python **3.14 or newer** is required. The executable's shebang looks for a command
+named `python3.14` on `PATH`. You can also invoke a compatible interpreter directly:
+
+```sh
+python3.14 ./withpy --help
+```
+
+On Windows, use `py -3.14 ./withpy --help`. If you download the standalone file
+instead of the archive on macOS or Linux, run `chmod +x withpy` before `./withpy`.
+The release needs no source checkout, pip installation, or virtual environment.
+
+## Useful workflows
+
+These examples run from the extracted release directory. After installing
+`withpy` on your `PATH`, you can omit the `./` prefix.
+
+```sh
+# Convert CSV to readable, consistently ordered JSON
+./withpy csv --mode tojson data.csv | ./withpy json --mode pretty --sort-keys
+
+# Query a CSV as a SQLite table, then format the JSON results
+./withpy db --csv people.csv --header --format json \
+  'SELECT name, age FROM data WHERE CAST(age AS INTEGER) >= 18' \
+  | ./withpy json --mode pretty --sort-keys
+
+# Inspect compressed JSON without creating an intermediate file
+./withpy compress --mode decompress --format gzip data.json.gz \
+  | ./withpy json --mode pretty
+```
+
+**Stdlib modules used: 92** | **Subcommands: 51**
 
 ## Subcommands
 
@@ -136,7 +177,7 @@ withpy color --from hex --to hsl "#FF6600"
 
 ```sh
 make build       # Compile-check source
-make test        # Run pytest suite (371 tests)
+make test        # Test source and freshly built artifact
 make amalgamate  # Build dist/withpy single-file artifact
 make dist        # Create tar.xz archive
 make clean       # Remove build artifacts
@@ -148,9 +189,9 @@ make help        # Show all targets
 - Zero third-party runtime dependencies
 - One subcommand per file under `withpy/commands/`
 - Thin argparse dispatcher in `cli.py`
-- Amalgamated single-file artifact via `build.py`
+- Single-file artifact via `build.py`, preserving separate module namespaces
 - Python 3.14+, fully type-annotated
-- See [CLAUDE.md](CLAUDE.md) for contributor guidelines
+- See [AGENTS.md](AGENTS.md) for contributor guidelines
 
 ## License
 

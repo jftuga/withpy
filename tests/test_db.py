@@ -1,6 +1,10 @@
 """Tests for the db subcommand."""
 
-import pytest
+import csv
+import io
+from pathlib import Path
+
+from tests.conftest import CliRunner
 
 
 def test_query_memory(cli):
@@ -58,3 +62,23 @@ def test_import_mode(cli, tmp_file):
     result = cli("db", "--csv", str(csv_path), "--header", "--table", "data", "--mode", "import")
     assert result.returncode == 0
     assert "3" in result.stdout.decode()
+
+
+def test_csv_query(cli: CliRunner) -> None:
+    """CSV query output preserves headers, quoting, numbers, and NULLs."""
+    result = cli("db", "--format", "csv", "SELECT 1 AS value, 'hello, world' AS text, NULL AS empty")
+    assert result.returncode == 0, result.stderr.decode()
+    assert list(csv.reader(io.StringIO(result.stdout.decode()))) == [
+        ["value", "text", "empty"], ["1", "hello, world", ""],
+    ]
+
+
+def test_csv_export(cli: CliRunner, tmp_path: Path) -> None:
+    """CSV export preserves imported rows and quoted fields."""
+    source = tmp_path / "data.csv"
+    source.write_text('name,value\n"hello, world",42\n', encoding="utf-8")
+    result = cli("db", "--csv", str(source), "--header", "--mode", "export", "--format", "csv")
+    assert result.returncode == 0, result.stderr.decode()
+    assert list(csv.reader(io.StringIO(result.stdout.decode()))) == [
+        ["name", "value"], ["hello, world", "42"],
+    ]

@@ -32,14 +32,8 @@ jobs:
           uv run python -m py_compile withpy/cli.py
           uv run python -m compileall -q withpy/commands/
 
-      - name: Run tests
-        run: uv run python -m pytest tests/ -v --ignore=tests/test_amalgamated.py
-
-      - name: Build amalgamated artifact
-        run: uv run python build.py
-
-      - name: Run amalgamated tests
-        run: uv run python -m pytest tests/test_amalgamated.py -v
+      - name: Test source and freshly built artifact
+        run: uv run python -m pytest tests/ -v
 
       - name: Smoke test
         run: |

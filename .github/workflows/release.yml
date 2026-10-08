@@ -24,14 +24,11 @@ jobs:
       - name: Install dependencies
         run: uv sync --group dev
 
-      - name: Run tests
-        run: |
-          uv run python build.py
-          uv run python -m pytest tests/ -v
+      - name: Test source and freshly built artifact
+        run: uv run python -m pytest tests/ -v
 
       - name: Build distribution
         run: |
-          uv run python build.py
           staging="withpy-${GITHUB_REF_NAME#v}"
           mkdir "$staging"
           cp dist/withpy README.md LICENSE "$staging/"
