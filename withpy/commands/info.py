@@ -186,7 +186,8 @@ def _format_csv_output(data: dict[str, dict[str, str]]) -> str:
         CSV string.
     """
     output = io.StringIO()
-    writer = csv.writer(output)
+    # Let stdout translate LF once on Windows.
+    writer = csv.writer(output, lineterminator="\n")
     writer.writerow(["section", "key", "value"])
     for section, values in data.items():
         for key, val in values.items():

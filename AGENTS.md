@@ -46,20 +46,24 @@ It contains no per-command logic.
 
 ## Amalgamation Rules
 
-The build produces a single-file `dist/withpy` via `build.py`. To keep
-amalgamation simple:
+The build produces a readable, flat `dist/withpy` via `build.py`, with deduplicated
+stdlib imports at the top and ordinary Python definitions below. The builder
+renames `register` and `run`, then rejects conflicting top-level names before
+writing the artifact. To keep amalgamation simple:
 
 - **No relative imports** in command modules.
 - **No `__file__`, `__package__`, or `importlib.resources`.**
 - **No embedded assets.** Use string literals.
 - **Command modules do not import each other.** Only stdlib + `commands.shared`.
 - **Module-level constants are fine.**
+- **Use command-specific helper and constant names when needed to avoid collisions.**
+- **Avoid wildcard imports and conflicting stdlib import aliases.**
 
 ## Build and Test
 
 ```
 make build       # Compile-check all source files
-make test        # pytest (builds amalgamated artifact first)
+make test        # Test source and freshly built artifact
 make amalgamate  # Produce dist/withpy
 make dist        # Create tar.xz archive
 make clean       # Remove build artifacts
@@ -72,7 +76,11 @@ make help        # Show all targets
 - **Known-value tests:** hash digests and epoch conversions against fixed expected output.
 - **Error-path tests:** invalid input, wrong parameters, unsupported formats.
 - **No external network.** Network tests use local listeners only.
-- `tests/test_amalgamated.py` runs `dist/withpy` as a subprocess.
+- The shared `cli` and `cli_command` fixtures run each command test against both
+  source modules and `dist/withpy`.
+- A session fixture rebuilds the artifact; build failures fail tests.
+- `tests/test_amalgamated.py` adds artifact smoke and standalone execution tests.
+- `tests/test_build.py` checks collision detection, readable output, and deterministic builds.
 
 ## Adding a New Subcommand
 

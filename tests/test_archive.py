@@ -1,6 +1,8 @@
 """Tests for the archive subcommand."""
 
-import os
+from pathlib import Path
+
+from tests.conftest import CliRunner
 import pytest
 
 
@@ -64,3 +66,20 @@ def test_directory_archive(cli, tmp_path):
     list_result = cli("archive", "--mode", "list", str(archive_path))
     assert b"a.txt" in list_result.stdout
     assert b"b.txt" in list_result.stdout
+
+
+@pytest.mark.parametrize("extension", ["zip", "tar", "tar.gz", "tar.bz2", "tar.xz"])
+def test_auto_format_roundtrip(cli: CliRunner, tmp_path: Path, extension: str) -> None:
+    """Auto-detection works when creating, listing, and extracting archives."""
+    source = tmp_path / "input.txt"
+    source.write_bytes(b"archive regression\n")
+    archive = tmp_path / f"data.{extension}"
+    target = tmp_path / "output"
+    created = cli("archive", "--output", str(archive), str(source))
+    assert created.returncode == 0, created.stderr.decode()
+    listed = cli("archive", "--mode", "list", str(archive))
+    assert listed.returncode == 0, listed.stderr.decode()
+    assert b"input.txt" in listed.stdout
+    extracted = cli("archive", "--mode", "extract", "--output", str(target), str(archive))
+    assert extracted.returncode == 0, extracted.stderr.decode()
+    assert (target / source.name).read_bytes() == source.read_bytes()

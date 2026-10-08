@@ -4,8 +4,9 @@ import base64
 import http.client
 import os
 import subprocess
-import sys
 import time
+from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 
@@ -23,13 +24,13 @@ def _extract_port(line: str) -> int:
 
 
 @pytest.fixture
-def file_server(tmp_path):
+def file_server(tmp_path: Path, cli_command: list[str]) -> Iterator[tuple[int, subprocess.Popen[bytes]]]:
     """Start a file server on a random port and yield (port, proc)."""
     (tmp_path / "hello.txt").write_text("hello world")
     (tmp_path / "sub").mkdir()
     (tmp_path / "sub" / "nested.txt").write_text("nested")
     proc = subprocess.Popen(
-        [sys.executable, "-m", "withpy", "serve", "--addr", "127.0.0.1", "--port", "0", "--dir", str(tmp_path), "--quiet"],
+        cli_command + ["serve", "--addr", "127.0.0.1", "--port", "0", "--dir", str(tmp_path), "--quiet"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
@@ -42,11 +43,11 @@ def file_server(tmp_path):
 
 
 @pytest.fixture
-def auth_server(tmp_path):
+def auth_server(tmp_path: Path, cli_command: list[str]) -> Iterator[tuple[int, subprocess.Popen[bytes]]]:
     """Start a file server with basic auth."""
     (tmp_path / "secret.txt").write_text("secret data")
     proc = subprocess.Popen(
-        [sys.executable, "-m", "withpy", "serve", "--addr", "127.0.0.1", "--port", "0", "--dir", str(tmp_path), "--quiet", "--auth", "admin:pass123"],
+        cli_command + ["serve", "--addr", "127.0.0.1", "--port", "0", "--dir", str(tmp_path), "--quiet", "--auth", "admin:pass123"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )

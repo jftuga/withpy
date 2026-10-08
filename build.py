@@ -9,7 +9,6 @@ import ast
 import os
 import re
 import stat
-import sys
 from pathlib import Path
 
 _SRC_DIR = Path("withpy")
@@ -18,8 +17,6 @@ _OUT_DIR = Path("dist")
 _OUT_FILE = _OUT_DIR / "withpy"
 
 _SHEBANG = "#!/usr/bin/env python3.14"
-
-_INTERNAL_PREFIXES: tuple[str, ...] = ("withpy.", "withpy ", "commands.", "commands ")
 
 
 def _is_internal_import(node: ast.stmt) -> bool:
@@ -159,16 +156,68 @@ if __name__ == "__main__":
 '''
 
 
+def _global_bindings(node: ast.stmt) -> list[tuple[str, str]]:
+    """Describe names bound by a top-level definition, assignment, or import.
+
+    Args:
+        node: A statement in the generated module.
+
+    Returns:
+        Name and import identity pairs; non-import bindings use an empty identity.
+
+    Raises:
+        ValueError: If a wildcard import prevents checking its bound names.
+    """
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+        return [(node.name, "")]
+    if isinstance(node, ast.Import):
+        return [(alias.asname or alias.name.split(".")[0], "module:" + (alias.name if alias.asname else alias.name.split(".")[0])) for alias in node.names]
+    if isinstance(node, ast.ImportFrom):
+        if any(alias.name == "*" for alias in node.names):
+            raise ValueError("wildcard imports cannot be checked for amalgamation collisions")
+        return [(alias.asname or alias.name, f"from:{node.module}:{alias.name}") for alias in node.names]
+    if isinstance(node, ast.Assign):
+        targets = node.targets
+    elif isinstance(node, (ast.AnnAssign, ast.AugAssign)):
+        targets = [node.target]
+    elif isinstance(node, ast.TypeAlias):
+        targets = [node.name]
+    else:
+        return []
+    return [(name.id, "") for target in targets for name in ast.walk(target) if isinstance(name, ast.Name) and isinstance(name.ctx, ast.Store)]
+
+
+def _validate_global_names(source: str) -> None:
+    """Reject conflicting top-level names before writing the executable.
+
+    Args:
+        source: The generated flat Python script.
+
+    Raises:
+        ValueError: If definitions, constants, or import aliases would collide.
+    """
+    seen: dict[str, tuple[str, int]] = {}
+    for node in ast.parse(source).body:
+        for name, identity in _global_bindings(node):
+            if name in seen:
+                previous_identity, previous_line = seen[name]
+                if identity and identity == previous_identity:
+                    continue
+                raise ValueError(f"global name collision for {name!r} at generated lines {previous_line} and {node.lineno}; use command-specific names")
+            seen[name] = (identity, node.lineno)
+
+
 def build() -> None:
     """Run the amalgamation build process.
 
     Raises:
         RuntimeError: If required source files are missing.
+        ValueError: If generated top-level names collide.
     """
     if not _SRC_DIR.is_dir():
         raise RuntimeError(f"source directory not found: {_SRC_DIR}")
     all_imports: set[str] = set()
-    init_source = (_SRC_DIR / "__init__.py").read_text()
+    init_source = (_SRC_DIR / "__init__.py").read_text(encoding="utf-8")
     all_imports.update(_extract_imports(init_source))
     version_line = ""
     for line in init_source.splitlines():
@@ -179,13 +228,13 @@ def build() -> None:
     shared_path = _CMD_DIR / "shared.py"
     if not shared_path.exists():
         raise RuntimeError("shared.py not found")
-    cli_source = (_SRC_DIR / "cli.py").read_text()
+    cli_source = (_SRC_DIR / "cli.py").read_text(encoding="utf-8")
     all_imports.update(_extract_imports(cli_source))
-    all_imports.update(_extract_imports(shared_path.read_text()))
+    all_imports.update(_extract_imports(shared_path.read_text(encoding="utf-8")))
     for p in cmd_modules:
         if p.name == "shared.py":
             continue
-        all_imports.update(_extract_imports(p.read_text()))
+        all_imports.update(_extract_imports(p.read_text(encoding="utf-8")))
     all_imports.discard("")
     sorted_imports = sorted(all_imports)
     sections: list[str] = []
@@ -195,20 +244,22 @@ def build() -> None:
     sections.append("")
     sections.append(version_line)
     sections.append("")
-    shared_body = _strip_imports_and_docstring(shared_path.read_text())
+    shared_body = _strip_imports_and_docstring(shared_path.read_text(encoding="utf-8"))
     sections.append(f"# --- shared ---\n{shared_body.strip()}")
     non_shared = [p for p in cmd_modules if p.name != "shared.py"]
     for p in non_shared:
         mod_name = p.stem
-        source = p.read_text()
+        source = p.read_text(encoding="utf-8")
         body = _strip_imports_and_docstring(source)
         body = _rename_functions(body, mod_name)
         sections.append(f"\n# --- {mod_name} ---\n{body.strip()}")
     sections.append(_build_dispatcher(cmd_modules))
     output = "\n\n".join(sections) + "\n"
     output = re.sub(r'\n{3,}', '\n\n\n', output)
+    _validate_global_names(output)
+    compile(output, str(_OUT_FILE), "exec")
     _OUT_DIR.mkdir(parents=True, exist_ok=True)
-    _OUT_FILE.write_text(output)
+    _OUT_FILE.write_text(output, encoding="utf-8")
     if os.name != "nt":
         _OUT_FILE.chmod(_OUT_FILE.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
     print(f"built {_OUT_FILE} ({_OUT_FILE.stat().st_size} bytes)")

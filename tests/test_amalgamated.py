@@ -1,18 +1,26 @@
 """Subprocess integration tests against the amalgamated dist/withpy artifact.
 
-Each test spawns dist/withpy as a subprocess and verifies a representative
-path from each implemented subcommand. All tests are skipped if the artifact
-has not been built.
+These smoke tests supplement the command suite, which runs against both
+source modules and the artifact. The session fixture rebuilds the artifact
+before testing; a missing or broken build fails instead of skipping tests.
 """
 
-import pytest
+import shutil
+import subprocess
+import sys
+import tomllib
+from pathlib import Path
+
+from tests.conftest import CliRunner
 
 
-def test_version(amalgamated):
-    """Amalgamated artifact reports its version."""
+def test_version(amalgamated: CliRunner) -> None:
+    """The bundled package version agrees with project metadata."""
+    metadata = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    version = tomllib.loads(metadata.read_text(encoding="utf-8"))["project"]["version"]
     result = amalgamated("--version")
     assert result.returncode == 0
-    assert b"withpy" in result.stdout
+    assert result.stdout.decode().strip() == f"withpy {version}"
 
 
 def test_hash(amalgamated):
@@ -219,3 +227,21 @@ def test_info_disk(amalgamated):
     result = amalgamated("info", "--mode", "disk")
     assert result.returncode == 0
     assert b"root_total" in result.stdout
+
+
+def test_standalone(built_artifact: Path, tmp_path: Path) -> None:
+    """Run the copied executable without source files or import search paths."""
+    executable = tmp_path / "withpy"
+    shutil.copy2(built_artifact, executable)
+    result = subprocess.run([sys.executable, "-I", str(executable), "db", "--format", "csv", "SELECT 1 AS value"], cwd=tmp_path, capture_output=True)
+    assert result.returncode == 0, result.stderr.decode()
+    assert result.stdout.splitlines() == [b"value", b"1"]
+
+
+def test_calc_stats(amalgamated: CliRunner) -> None:
+    """Calculator statistics retain their own helper in the artifact."""
+    result = amalgamated("calc", "--mode", "stats", "1", "2", "3")
+    assert result.returncode == 0, result.stderr.decode()
+    stats = dict(line.split(":", 1) for line in result.stdout.decode().splitlines())
+    assert float(stats["mean"]) == 2
+    assert float(stats["stdev"]) == 1

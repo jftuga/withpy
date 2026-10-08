@@ -16,7 +16,7 @@ build:
 	$(PYTHON) -m py_compile withpy/cli.py
 	$(PYTHON) -m compileall -q withpy/commands/
 
-test: amalgamate
+test:
 	$(PYTHON) -m pytest tests/ -v
 
 amalgamate:
@@ -57,7 +57,7 @@ help:
 	@echo ""
 	@echo "Targets:"
 	@echo "  build         Compile-check all source files (default)"
-	@echo "  test          Run pytest suite (builds amalgamated artifact first)"
+	@echo "  test          Test source and freshly built artifact"
 	@echo "  amalgamate    Build single-file dist/$(NAME) via build.py"
 	@echo "  dist          Build amalgamated + create $(NAME)-v$(VERSION).tar.xz"
 	@echo "  install       Install to $(INSTALL_DIR) (requires sudo)"
